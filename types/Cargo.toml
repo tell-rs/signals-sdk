@@ -1,0 +1,14 @@
+[package]
+name = "signals-types"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Signal types for the Signals SDK — lightweight, serde-only extraction boundary"
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
