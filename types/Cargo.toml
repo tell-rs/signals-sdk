@@ -5,6 +5,8 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 description = "Signal types for the Signals SDK — lightweight, serde-only extraction boundary"
+repository.workspace = true
+readme = "../README.md"
 
 [lints]
 workspace = true

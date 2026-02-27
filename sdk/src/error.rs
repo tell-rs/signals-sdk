@@ -9,11 +9,11 @@ pub enum AgentError {
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
 
-    /// SSE stream ended without a reconnectable error.
-    #[error("SSE stream ended unexpectedly")]
-    StreamEnded,
+    /// Server returned a non-2xx, non-auth error (500, 502, 503, 429, etc.)
+    #[error("server error: HTTP {status}")]
+    ServerError { status: u16 },
 
-    /// Server rejected the authentication credentials.
+    /// Server rejected the authentication credentials (401 or 403).
     #[error("authentication failed: {status}")]
     AuthFailed { status: u16 },
 

@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 /// Top-level configuration for connecting to a signal bus.
+#[derive(Debug, Clone)]
 pub struct AgentConfig {
     /// Server URL (e.g. `https://tell.example.com`)
     pub server_url: String,
@@ -24,6 +25,7 @@ pub struct AgentConfig {
 }
 
 /// Controls exponential backoff on SSE reconnection.
+#[derive(Debug, Clone)]
 pub struct ReconnectConfig {
     /// Delay before the first reconnect attempt.
     pub initial_delay: Duration,

@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use futures_util::StreamExt;
+use reqwest::Url;
 use tokio::sync::mpsc;
 use tracing::{info, warn};
 
@@ -81,21 +82,29 @@ impl SignalStream {
 /// Build the SSE endpoint URL with optional query filters.
 fn build_url(config: &AgentConfig) -> String {
     let base = config.server_url.trim_end_matches('/');
-    let mut url = format!("{base}/api/v1/signals");
+    let endpoint = format!("{base}/api/v1/signals");
 
-    let mut params = Vec::new();
+    let mut params: Vec<(&str, &str)> = Vec::new();
     if let Some(ref kind) = config.kind_filter {
-        params.push(format!("kind={kind}"));
+        params.push(("kind", kind));
     }
     if let Some(ref source) = config.source_filter {
-        params.push(format!("source={source}"));
-    }
-    if !params.is_empty() {
-        url.push('?');
-        url.push_str(&params.join("&"));
+        params.push(("source", source));
     }
 
-    url
+    if params.is_empty() {
+        return endpoint;
+    }
+
+    // Use Url to properly percent-encode query parameters
+    let mut url = Url::parse(&endpoint).expect("build_url: server_url produced an invalid URL");
+    {
+        let mut query = url.query_pairs_mut();
+        for (key, value) in &params {
+            query.append_pair(key, value);
+        }
+    }
+    url.to_string()
 }
 
 /// Validate that required fields are present.
@@ -178,7 +187,7 @@ async fn stream_signals(
         return Err(AgentError::AuthFailed { status });
     }
     if !response.status().is_success() {
-        return Err(AgentError::AuthFailed { status });
+        return Err(AgentError::ServerError { status });
     }
 
     let mut stream = response.bytes_stream();
@@ -199,10 +208,15 @@ async fn stream_signals(
                     latest_id = Some(id);
                 }
                 if let Some(ref data) = event.data {
-                    if let Ok(signal) = serde_json::from_str::<Signal>(data) {
-                        // If the receiver is gone, stop streaming
-                        if tx.send(signal).await.is_err() {
-                            return Ok(latest_id);
+                    match serde_json::from_str::<Signal>(data) {
+                        Ok(signal) => {
+                            // If the receiver is gone, stop streaming
+                            if tx.send(signal).await.is_err() {
+                                return Ok(latest_id);
+                            }
+                        }
+                        Err(e) => {
+                            warn!("failed to deserialize signal: {e}, data: {data}");
                         }
                     }
                 }

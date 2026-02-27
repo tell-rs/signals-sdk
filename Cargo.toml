@@ -16,7 +16,7 @@ license = "MIT"
 
 [workspace.dependencies]
 # Internal
-signals-types = { path = "types" }
+signals-types = { path = "types", version = "0.1.0" }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
